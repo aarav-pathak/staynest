@@ -51,30 +51,48 @@ export default function Home() {
         <h1>Find your next nest.</h1>
         <p className="muted">Homestays, havelis, villas and hostels across India.</p>
         <form className="search-bar card" onSubmit={submit}>
-          <input placeholder="Where to? (e.g. Jaipur)" value={filters.city} onChange={set('city')} />
-          <select value={filters.type} onChange={set('type')}>
-            <option value="">Any type</option>
-            {STAY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <input
-            type="date"
-            aria-label="Check-in"
-            placeholder="Check-in"
-            value={filters.checkIn}
-            min={today}
-            onChange={handleCheckInChange}
-          />
-          <input
-            type="date"
-            aria-label="Check-out"
-            placeholder="Check-out"
-            value={filters.checkOut}
-            min={filters.checkIn || today}
-            onChange={set('checkOut')}
-          />
-          <input type="number" min="1" placeholder="Guests" value={filters.guests} onChange={set('guests')} />
-          <input type="number" min="0" placeholder="Max ₹/night" value={filters.maxPrice} onChange={set('maxPrice')} />
-          <button className="btn">Search</button>
+          <label className="search-field flex-2">
+            <span>Where</span>
+            <input placeholder="e.g. Jaipur" value={filters.city} onChange={set('city')} />
+          </label>
+          <label className="search-field">
+            <span>Type</span>
+            <select value={filters.type} onChange={set('type')}>
+              <option value="">Any type</option>
+              {STAY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+          <label className="search-field">
+            <span>Check-in</span>
+            <input
+              type="date"
+              aria-label="Check-in"
+              value={filters.checkIn}
+              min={today}
+              onChange={handleCheckInChange}
+            />
+          </label>
+          <label className="search-field">
+            <span>Check-out</span>
+            <input
+              type="date"
+              aria-label="Check-out"
+              value={filters.checkOut}
+              min={filters.checkIn || today}
+              onChange={set('checkOut')}
+            />
+          </label>
+          <label className="search-field">
+            <span>Guests</span>
+            <input type="number" min="1" placeholder="Any" value={filters.guests} onChange={set('guests')} />
+          </label>
+          <label className="search-field">
+            <span>Max ₹/night</span>
+            <input type="number" min="0" placeholder="Any" value={filters.maxPrice} onChange={set('maxPrice')} />
+          </label>
+          <div className="search-btn-wrap">
+            <button className="btn">Search</button>
+          </div>
         </form>
       </div>
 
