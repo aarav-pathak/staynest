@@ -27,6 +27,11 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const logout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setUser(null);
+  };
+
   const toggleWishlist = async (listingId) => {
     if (!user) return false;
     const { data } = await api.post(`/auth/wishlist/${listingId}`);
