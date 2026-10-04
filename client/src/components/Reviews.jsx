@@ -64,15 +64,23 @@ export default function Reviews({ listingId, onReviewAdded }) {
     }
   };
 
-  const removeReview = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete your review?')) return;
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const [submittingDelete, setSubmittingDelete] = useState(false);
+
+  const confirmRemoveReview = async () => {
+    if (!deletingReviewId) return;
+    setSubmittingDelete(true);
     setError('');
     try {
-      await api.delete(`/listings/${listingId}/reviews/${reviewId}`);
+      await api.delete(`/listings/${listingId}/reviews/${deletingReviewId}`);
+      setDeletingReviewId(null);
       load();
       onReviewAdded?.();
     } catch (err) {
       setError(getErrorMessage(err));
+      setDeletingReviewId(null);
+    } finally {
+      setSubmittingDelete(false);
     }
   };
 
@@ -124,10 +132,20 @@ export default function Reviews({ listingId, onReviewAdded }) {
             <p>{r.comment}</p>
             {isOwn && (
               <div className="row" style={{ marginTop: '8px', gap: '8px' }}>
-                <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '0.85rem' }} onClick={() => startEdit(r)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ padding: '4px 10px', fontSize: '0.85rem' }}
+                  onClick={() => startEdit(r)}
+                >
                   Edit
                 </button>
-                <button className="btn btn-danger" style={{ padding: '4px 10px', fontSize: '0.85rem' }} onClick={() => removeReview(r._id)}>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  style={{ padding: '4px 10px', fontSize: '0.85rem' }}
+                  onClick={() => setDeletingReviewId(r._id)}
+                >
                   Delete
                 </button>
               </div>
@@ -149,6 +167,36 @@ export default function Reviews({ listingId, onReviewAdded }) {
           {error && <p className="error">{error}</p>}
           <button className="btn">Submit review</button>
         </form>
+      )}
+
+      {deletingReviewId && (
+        <div
+          className="modal-backdrop"
+          onClick={() => !submittingDelete && setDeletingReviewId(null)}
+        >
+          <div className="modal card" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Review?</h3>
+            <p>Are you sure you want to delete your review? This action cannot be undone.</p>
+            <div className="row" style={{ marginTop: '18px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={submittingDelete}
+                onClick={() => setDeletingReviewId(null)}
+              >
+                Keep Review
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={submittingDelete}
+                onClick={confirmRemoveReview}
+              >
+                {submittingDelete ? 'Deleting...' : 'Delete Review'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );
