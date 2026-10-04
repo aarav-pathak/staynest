@@ -8,6 +8,8 @@ export default function HostDashboard() {
   const [listings, setListings] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState('');
+  const [deletingListing, setDeletingListing] = useState(null);
+  const [submittingDelete, setSubmittingDelete] = useState(false);
 
   const load = () => {
     Promise.all([api.get('/listings/mine'), api.get('/bookings/host')])
@@ -27,14 +29,19 @@ export default function HostDashboard() {
     load();
   };
 
-  const remove = async (id) => {
-    if (!window.confirm('Delete this listing?')) return;
+  const confirmDelete = async () => {
+    if (!deletingListing) return;
+    setSubmittingDelete(true);
     setError('');
     try {
-      await api.delete(`/listings/${id}`);
+      await api.delete(`/listings/${deletingListing._id}`);
+      setDeletingListing(null);
       load();
     } catch (err) {
       setError(getErrorMessage(err));
+      setDeletingListing(null);
+    } finally {
+      setSubmittingDelete(false);
     }
   };
 
@@ -95,12 +102,50 @@ export default function HostDashboard() {
               <span className="muted">{l.city} · {formatINR(l.pricePerNight)}/night</span>
               <div className="row">
                 <Link to={`/host/listings/${l._id}/edit`} className="btn btn-ghost">Edit</Link>
-                <button className="btn btn-danger" onClick={() => remove(l._id)}>Delete</button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => setDeletingListing(l)}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {deletingListing && (
+        <div
+          className="modal-backdrop"
+          onClick={() => !submittingDelete && setDeletingListing(null)}
+        >
+          <div className="modal card" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Listing?</h3>
+            <p>
+              Are you sure you want to delete <strong>{deletingListing.title}</strong>?
+            </p>
+            <div className="row" style={{ marginTop: '18px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={submittingDelete}
+                onClick={() => setDeletingListing(null)}
+              >
+                Keep Listing
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={submittingDelete}
+                onClick={confirmDelete}
+              >
+                {submittingDelete ? 'Deleting...' : 'Delete Listing'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
