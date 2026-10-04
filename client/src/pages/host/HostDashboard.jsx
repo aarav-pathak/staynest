@@ -38,12 +38,16 @@ export default function HostDashboard() {
     }
   };
 
-  if (error) return <p className="error">{error}</p>;
   if (!listings) return <Loader />;
 
   // TODO: earnings summary cards (total earnings, upcoming check-ins, occupancy).
   return (
     <section>
+      {error && (
+        <div className="error card" style={{ padding: '12px 16px', marginBottom: '20px', background: '#fef2f2', border: '1px solid #f87171', color: '#991b1b', borderRadius: '8px', fontWeight: '500' }}>
+          ⚠️ {error}
+        </div>
+      )}
       <div className="row-between">
         <h1>Host Dashboard</h1>
         <Link to="/host/listings/new" className="btn">+ New listing</Link>
