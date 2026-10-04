@@ -8,6 +8,8 @@ export default function Trips() {
   const location = useLocation();
   const [bookings, setBookings] = useState(null);
   const [error, setError] = useState('');
+  const [cancellingBooking, setCancellingBooking] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const load = () =>
     api
@@ -19,18 +21,17 @@ export default function Trips() {
     load();
   }, []);
 
-  const cancel = async (booking) => {
-    const title = booking.listing?.title || 'this stay';
-    const dates = `${formatDate(booking.checkIn)} → ${formatDate(booking.checkOut)}`;
-    if (!window.confirm(`Are you sure you want to cancel your trip to ${title} (${dates})?`)) {
-      return;
-    }
-
+  const confirmCancel = async () => {
+    if (!cancellingBooking) return;
+    setSubmitting(true);
     try {
-      await api.patch(`/bookings/${booking._id}/cancel`);
+      await api.patch(`/bookings/${cancellingBooking._id}/cancel`);
+      setCancellingBooking(null);
       load();
     } catch (err) {
       setError(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -59,12 +60,53 @@ export default function Trips() {
               <span className={`status status-${b.status}`}>{b.status}</span>
               <strong>{formatINR(b.totalPrice)}</strong>
               {['pending', 'confirmed'].includes(b.status) && (
-                <button className="btn btn-danger" onClick={() => cancel(b)}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => setCancellingBooking(b)}
+                >
+                  Cancel
+                </button>
               )}
             </div>
           </div>
         ))}
       </div>
+
+      {cancellingBooking && (
+        <div
+          className="modal-backdrop"
+          onClick={() => !submitting && setCancellingBooking(null)}
+        >
+          <div className="modal card" onClick={(e) => e.stopPropagation()}>
+            <h3>Cancel Trip Reservation?</h3>
+            <p>
+              Are you sure you want to cancel your stay at{' '}
+              <strong>{cancellingBooking.listing?.title}</strong> (
+              {formatDate(cancellingBooking.checkIn)} → {formatDate(cancellingBooking.checkOut)}
+              )?
+            </p>
+            <div className="row" style={{ marginTop: '18px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={submitting}
+                onClick={() => setCancellingBooking(null)}
+              >
+                Keep Reservation
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={submitting}
+                onClick={confirmCancel}
+              >
+                {submitting ? 'Cancelling...' : 'Yes, Cancel Trip'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
