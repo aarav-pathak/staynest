@@ -1,6 +1,7 @@
 import Booking from '../models/Booking.js';
 import Listing from '../models/Listing.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { sendBookingRequestToHost, sendBookingStatusToGuest } from '../utils/mailer.js';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -47,6 +48,16 @@ export const createBooking = asyncHandler(async (req, res) => {
     totalPrice: nights * listing.pricePerNight,
   });
 
+  // Non-blocking email notification to host
+  listing.populate('host', 'name email').then((populatedListing) => {
+    sendBookingRequestToHost({
+      host: populatedListing.host,
+      guest: req.user,
+      listing: populatedListing,
+      booking,
+    });
+  }).catch((err) => console.error('[Mailer] Error notifying host:', err.message));
+
   res.status(201).json(booking);
 });
 
@@ -91,7 +102,7 @@ export const cancelBooking = asyncHandler(async (req, res) => {
 // PATCH /api/bookings/:id/status (host of the listing)
 export const updateBookingStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
-  const booking = await Booking.findById(req.params.id).populate('listing', 'host');
+  const booking = await Booking.findById(req.params.id).populate('listing', 'title city state host');
   if (!booking) {
     res.status(404);
     throw new Error('Booking not found');
@@ -106,5 +117,18 @@ export const updateBookingStatus = asyncHandler(async (req, res) => {
   }
   booking.status = status;
   await booking.save();
+
+  // Non-blocking email notification to guest on confirm or decline
+  if (['confirmed', 'cancelled'].includes(status)) {
+    booking.populate('guest', 'name email').then((populatedBooking) => {
+      sendBookingStatusToGuest({
+        guest: populatedBooking.guest,
+        listing: populatedBooking.listing,
+        booking: populatedBooking,
+        status,
+      });
+    }).catch((err) => console.error('[Mailer] Error notifying guest:', err.message));
+  }
+
   res.json(booking);
 });
