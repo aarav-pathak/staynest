@@ -17,6 +17,7 @@ export default function Navbar() {
       </Link>
       <nav className="nav-links">
         <NavLink to="/" end>Explore</NavLink>
+        {user && <NavLink to="/wishlist">Wishlist</NavLink>}
         {user && <NavLink to="/trips">My Trips</NavLink>}
         {isHost && <NavLink to="/host">Host Dashboard</NavLink>}
         {user ? (
