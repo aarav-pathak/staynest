@@ -7,13 +7,24 @@ import { formatDate, formatINR } from '../../utils/format.js';
 export default function HostDashboard() {
   const [listings, setListings] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [stats, setStats] = useState({
+    totalEarnings: 0,
+    upcomingCheckIns: 0,
+    pendingRequests: 0,
+    avgRating: 0,
+  });
   const [error, setError] = useState('');
 
   const load = () => {
-    Promise.all([api.get('/listings/mine'), api.get('/bookings/host')])
-      .then(([l, b]) => {
+    Promise.all([
+      api.get('/listings/mine'),
+      api.get('/bookings/host'),
+      api.get('/bookings/host/stats'),
+    ])
+      .then(([l, b, s]) => {
         setListings(l.data);
         setBookings(b.data);
+        setStats(s.data);
       })
       .catch((err) => setError(getErrorMessage(err)));
   };
@@ -23,25 +34,77 @@ export default function HostDashboard() {
   }, []);
 
   const setStatus = async (id, status) => {
-    await api.patch(`/bookings/${id}/status`, { status });
-    load();
+    try {
+      await api.patch(`/bookings/${id}/status`, { status });
+      load();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
   };
 
   const remove = async (id) => {
     if (!window.confirm('Delete this listing?')) return;
-    await api.delete(`/listings/${id}`);
-    load();
+    setError('');
+    try {
+      await api.delete(`/listings/${id}`);
+      load();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
   };
 
-  if (error) return <p className="error">{error}</p>;
   if (!listings) return <Loader />;
 
-  // TODO: earnings summary cards (total earnings, upcoming check-ins, occupancy).
   return (
     <section>
+      {error && (
+        <div
+          className="error card"
+          style={{
+            padding: '12px 16px',
+            marginBottom: '20px',
+            background: '#fef2f2',
+            border: '1px solid #f87171',
+            color: '#991b1b',
+            borderRadius: '8px',
+            fontWeight: '500',
+          }}
+        >
+          ⚠️ {error}
+        </div>
+      )}
+
       <div className="row-between">
         <h1>Host Dashboard</h1>
         <Link to="/host/listings/new" className="btn">+ New listing</Link>
+      </div>
+
+      <div className="stats-grid">
+        <div className="card stat-card">
+          <span className="stat-label">Total Earnings</span>
+          <span className="stat-value">{formatINR(stats.totalEarnings)}</span>
+          <span className="stat-sub">From completed stays</span>
+        </div>
+
+        <div className="card stat-card">
+          <span className="stat-label">Upcoming Check-ins</span>
+          <span className="stat-value">{stats.upcomingCheckIns}</span>
+          <span className="stat-sub">Next 7 days (confirmed)</span>
+        </div>
+
+        <div className="card stat-card">
+          <span className="stat-label">Pending Requests</span>
+          <span className="stat-value">{stats.pendingRequests}</span>
+          <span className="stat-sub">Awaiting your response</span>
+        </div>
+
+        <div className="card stat-card">
+          <span className="stat-label">Average Rating</span>
+          <span className="stat-value">
+            {stats.avgRating > 0 ? `★ ${stats.avgRating}` : '—'}
+          </span>
+          <span className="stat-sub">Across all listings</span>
+        </div>
       </div>
 
       <h2>Booking requests</h2>
