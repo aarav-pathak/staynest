@@ -75,8 +75,9 @@ export const deleteListing = asyncHandler(async (req, res) => {
 });
 
 const recalculateListingRating = async (listingId) => {
+  const objectId = typeof listingId === 'string' ? new mongoose.Types.ObjectId(listingId) : listingId;
   const stats = await Review.aggregate([
-    { $match: { listing: listingId } },
+    { $match: { listing: objectId } },
     { $group: { _id: '$listing', avg: { $avg: '$rating' }, count: { $sum: 1 } } },
   ]);
   const avgRating = stats.length > 0 ? Math.round(stats[0].avg * 10) / 10 : 0;
@@ -125,12 +126,12 @@ export const updateReview = asyncHandler(async (req, res) => {
   const { rating, comment } = req.body;
   const review = await Review.findById(req.params.reviewId);
 
-  if (!review || !review.listing.equals(req.params.id)) {
+  if (!review || String(review.listing) !== String(req.params.id)) {
     res.status(404);
     throw new Error('Review not found');
   }
 
-  if (!review.user.equals(req.user._id)) {
+  if (String(review.user) !== String(req.user._id)) {
     res.status(403);
     throw new Error('You can only edit your own review');
   }
@@ -149,12 +150,12 @@ export const updateReview = asyncHandler(async (req, res) => {
 export const deleteReview = asyncHandler(async (req, res) => {
   const review = await Review.findById(req.params.reviewId);
 
-  if (!review || !review.listing.equals(req.params.id)) {
+  if (!review || String(review.listing) !== String(req.params.id)) {
     res.status(404);
     throw new Error('Review not found');
   }
 
-  if (!review.user.equals(req.user._id)) {
+  if (String(review.user) !== String(req.user._id)) {
     res.status(403);
     throw new Error('You can only delete your own review');
   }
