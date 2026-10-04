@@ -24,7 +24,7 @@ export default function Reviews({ listingId, onReviewAdded }) {
   }, [listingId]);
 
   const userReview = user
-    ? reviews.find((r) => r.user?._id === user._id || r.user === user._id)
+    ? reviews.find((r) => String(r.user?._id || r.user) === String(user._id))
     : null;
 
   const submit = async (e) => {
@@ -81,7 +81,7 @@ export default function Reviews({ listingId, onReviewAdded }) {
       <h2>Reviews ({reviews.length})</h2>
       {reviews.length === 0 && <p className="muted">No reviews yet.</p>}
       {reviews.map((r) => {
-        const isOwn = user && (r.user?._id === user._id || r.user === user._id);
+        const isOwn = user && String(r.user?._id || r.user) === String(user._id);
         const isEditing = editingId === r._id;
 
         if (isEditing) {
