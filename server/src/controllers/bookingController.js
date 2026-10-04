@@ -81,14 +81,17 @@ export const getHostStats = asyncHandler(async (req, res) => {
   const totalEarnings = earningsAgg.length > 0 ? earningsAgg[0].totalEarnings : 0;
 
   // 2. Upcoming check-ins in the next 7 days
-  const now = new Date();
-  const next7Days = new Date();
-  next7Days.setDate(next7Days.getDate() + 7);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const next7DaysEnd = new Date(todayStart);
+  next7DaysEnd.setDate(next7DaysEnd.getDate() + 7);
+  next7DaysEnd.setHours(23, 59, 59, 999);
 
   const upcomingCheckIns = await Booking.countDocuments({
     listing: { $in: listingIds },
     status: 'confirmed',
-    checkIn: { $gte: now, $lte: next7Days },
+    checkIn: { $gte: todayStart, $lte: next7DaysEnd },
   });
 
   // 3. Pending requests count
